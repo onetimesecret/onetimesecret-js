@@ -1,0 +1,81 @@
+{
+  "name": "@onetimesecret/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript/JavaScript client for the Onetime Secret API",
+  "keywords": [
+    "onetimesecret",
+    "onetime-secret",
+    "secrets",
+    "secret-sharing",
+    "one-time",
+    "self-destructing",
+    "api-client",
+    "sdk"
+  ],
+  "homepage": "https://github.com/onetimesecret/onetime-js#readme",
+  "bugs": "https://github.com/onetimesecret/onetime-js/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/onetimesecret/onetime-js.git"
+  },
+  "license": "MIT",
+  "author": "Onetime Secret <support@onetimesecret.com> (https://onetimesecret.com)",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.14.0",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsdown",
+    "bump": "node scripts/bump-version.mjs",
+    "check": "pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test && pnpm run check:package",
+    "check:package": "publint && attw --pack . --profile node16",
+    "clean": "rm -rf dist coverage",
+    "format": "biome format --write .",
+    "generate": "node scripts/generate-types.mjs",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "prepublishOnly": "pnpm run clean && pnpm run build && pnpm run check:package && pnpm run release:check",
+    "release:check": "node scripts/bump-version.mjs --check",
+    "sync-spec": "node scripts/sync-spec.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tools.json"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "^2.5.15",
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^5.0.5",
+    "openapi-typescript": "^7.13.0",
+    "publint": "^0.3.25",
+    "tsdown": "^0.23.1",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,63 @@
+name: API spec drift
+
+# The SDK is typed against the published OpenAPI definition for API v2
+# (https://api.onetimesecret.com/doc/api-v2.json), which onetimesecret/onetimesecret
+# generates from its Zod schemas. This job notices when the published contract
+# moves ahead of the vendored copy and opens a pull request with the regenerated
+# types, so the diff can be reviewed like any other change.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1-5" # weekdays, 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Fetch the published spec and regenerate types
+        id: sync
+        run: |
+          pnpm run sync-spec
+          pnpm run generate
+          if git diff --quiet -- spec src/generated; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=$(node -p 'require("./spec/openapi.v2.json").info.version')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Typecheck against the new contract
+        if: steps.sync.outputs.changed == 'true'
+        continue-on-error: true # a failing typecheck is exactly what the PR should show
+        run: pnpm run typecheck
+
+      - uses: peter-evans/create-pull-request@v7
+        if: steps.sync.outputs.changed == 'true'
+        with:
+          branch: chore/sync-openapi-spec
+          commit-message: "chore: sync OpenAPI v2 spec (${{ steps.sync.outputs.version }})"
+          title: "Sync OpenAPI v2 spec (${{ steps.sync.outputs.version }})"
+          body: |
+            The published API v2 definition changed. This PR vendors the new spec and
+            regenerates `src/generated/v2.ts`.
+
+            Review the generated diff for fields the SDK should expose or validate
+            differently, and check whether `docs/api-contract.md` needs updating.
+            If the typecheck job failed, the contract change is breaking for the SDK.
+          labels: api-contract
+          delete-branch: true

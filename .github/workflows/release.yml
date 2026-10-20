@@ -1,0 +1,86 @@
+name: Release
+
+# Publishes @onetimesecret/sdk to npm from v* tags using npm Trusted Publishing
+# (OIDC), so no npm token is stored in this repository. Provenance attestations
+# are generated automatically. See docs/releasing.md for the one-time setup and
+# the release procedure.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    environment:
+      name: npmjs.com
+      url: https://www.npmjs.com/package/@onetimesecret/sdk
+    permissions:
+      contents: write # create the GitHub release
+      id-token: write # mint the OIDC token npm verifies
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing needs npm >= 11.5.1; the runner's bundled npm may lag.
+      - run: npm install -g npm@latest && npm --version
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Verify the tag matches the package version
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json ($version)" >&2
+            exit 1
+          fi
+          pnpm run release:check
+
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run test
+      - run: pnpm run build
+      - run: pnpm run check:package
+
+      - name: Publish
+        run: npm publish --access public
+        # No NODE_AUTH_TOKEN: npm exchanges the GitHub OIDC token for a
+        # short-lived publish credential. Prereleases (v1.0.0-rc.1) get the
+        # "next" dist-tag so `npm install @onetimesecret/sdk` stays on stable.
+        env:
+          NPM_CONFIG_TAG: ${{ contains(github.ref_name, '-') && 'next' || 'latest' }}
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > /tmp/notes.md
+          if [ ! -s /tmp/notes.md ]; then
+            echo "::error::No CHANGELOG.md section for $version" >&2
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "@onetimesecret/sdk ${GITHUB_REF_NAME#v}" \
+            --notes-file /tmp/notes.md \
+            --verify-tag \
+            ${{ contains(github.ref_name, '-') && '--prerelease' || '' }}

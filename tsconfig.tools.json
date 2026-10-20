@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "isolatedDeclarations": false,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": ["test", "scripts", "examples", "*.config.ts"],
+  "exclude": ["test/package.test.ts"]
+}
