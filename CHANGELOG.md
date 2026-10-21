@@ -22,5 +22,5 @@ include breaking changes; they are called out explicitly.
   `AbortSignal` support.
 - Response types generated from the published OpenAPI definition.
 
-[Unreleased]: https://github.com/onetimesecret/onetime-js/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/onetimesecret/onetime-js/releases/tag/v0.1.0
+[Unreleased]: https://github.com/onetimesecret/onetimesecret-js/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/onetimesecret/onetimesecret-js/releases/tag/v0.1.0

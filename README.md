@@ -1,14 +1,14 @@
 # Onetime Secret — TypeScript / JavaScript SDK
 
 [![npm](https://img.shields.io/npm/v/%40onetimesecret%2Fsdk)](https://www.npmjs.com/package/@onetimesecret/sdk)
-[![CI](https://github.com/onetimesecret/onetime-js/actions/workflows/ci.yml/badge.svg)](https://github.com/onetimesecret/onetime-js/actions/workflows/ci.yml)
+[![CI](https://github.com/onetimesecret/onetimesecret-js/actions/workflows/ci.yml/badge.svg)](https://github.com/onetimesecret/onetimesecret-js/actions/workflows/ci.yml)
 
 The official client for the [Onetime Secret](https://onetimesecret.com) API.
 Share sensitive information through a link that can only be viewed once.
 
-The package is **`@onetimesecret/sdk`**. This repository, **`onetime-js`**, is
-the JavaScript member of the Onetime Secret SDK family — each language has its
-own repository, and the repository name is not the package name.
+The package is **`@onetimesecret/sdk`**. This repository, **`onetimesecret-js`**,
+is the JavaScript member of the Onetime Secret SDK family — each language has
+its own repository, and the repository name is not the package name.
 
 - **Zero runtime dependencies.** Built on the platform's `fetch`, so it runs on
   Node.js 22+, Deno, Bun, Cloudflare Workers and browsers without polyfills.

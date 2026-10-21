@@ -1,5 +1,13 @@
 version: 2
 updates:
+  # release.yml pins its actions to commit SHAs so a moved upstream tag cannot
+  # replace code able to publish the package. Dependabot keeps the pins
+  # current, updating the SHA and the version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -7,7 +15,3 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: monthly

@@ -21,9 +21,9 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: pnpm
@@ -46,7 +46,7 @@ jobs:
         continue-on-error: true # a failing typecheck is exactly what the PR should show
         run: pnpm run typecheck
 
-      - uses: peter-evans/create-pull-request@v7
+      - uses: peter-evans/create-pull-request@v8
         if: steps.sync.outputs.changed == 'true'
         with:
           branch: chore/sync-openapi-spec

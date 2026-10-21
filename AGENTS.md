@@ -6,8 +6,8 @@ Guidance for coding agents (and humans) working in this repository.
 
 `@onetimesecret/sdk`: the official TypeScript/JavaScript client for the
 Onetime Secret API v2. Single package, zero runtime dependencies, ESM + CJS.
-It belongs to a family of SDKs (`onetime-ruby`, ...) that follow the same API
-and the same release model, but it is written as an idiomatic TypeScript
+It belongs to a family of SDKs (`onetimesecret-py`, `onetimesecret-rust`,
+`onetime-ruby`, ...) that follow the same API and the same release model, but it is written as an idiomatic TypeScript
 library, not a port of the Ruby one.
 
 ## Commands

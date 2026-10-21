@@ -1,22 +1,30 @@
 # Releasing
 
-This document covers the one-time setup for publishing `@onetimesecret/sdk`
-and the procedure for each release. It mirrors
-[onetime-ruby's releasing guide](https://github.com/onetimesecret/onetime-ruby/blob/main/docs/releasing.md)
-so the SDK family shares one mental model: **the version lives in the repo,
-a `v*` tag publishes it, and the registry trusts the workflow rather than a
-stored token.**
+How this SDK is set up for publishing and how a release is cut. The workflow
+is the same shape across the Onetime Secret SDKs (`onetimesecret-py`,
+`onetimesecret-rust`, `onetime-ruby`): push a `vX.Y.Z` tag, CI verifies the
+tag matches the package version, builds, publishes through the registry's
+trusted-publishing (OIDC) flow, and creates the GitHub Release. No registry
+token is stored anywhere.
 
-## Package and repository names
+## Names
 
-- **`@onetimesecret/sdk`** is the npm package.
-- **`onetime-js`** is the repository, following `onetime-ruby`. Repository
-  names and package names do not need to match.
-- The bare name `onetimesecret` on npm belongs to an unrelated 2022 package.
-  The scoped name avoids the conflict and signals that the publisher is the
-  organisation. (npm has a
-  [dispute process](https://docs.npmjs.com/policies/disputes) for abandoned
-  names if we ever want the bare one.)
+| What | Value |
+|---|---|
+| Repository | `onetimesecret/onetimesecret-js` |
+| Package (npm) | `@onetimesecret/sdk` |
+| Import | `import { OnetimeSecret } from "@onetimesecret/sdk"` |
+| Version source | `package.json` (mirrored into `src/version.ts`) |
+| Workflow | `.github/workflows/release.yml` |
+| GitHub environment | `npm` |
+
+Repository and package names do not need to match; the other SDKs follow the
+same pattern. The bare name `onetimesecret` on npm belongs to an unrelated
+2022 package, so the package is scoped to the organisation. If that name is
+ever transferred under npm's [dispute process](https://docs.npmjs.com/policies/disputes),
+renaming is a one-line change to `package.json`'s `name`, the `url:` in
+`release.yml`, and a release note; the scoped name can then stay as a
+deprecated alias.
 
 ## Where the version lives
 
@@ -53,6 +61,11 @@ npm publish --access public     # prompts for 2FA; prepublishOnly rebuilds and r
 Verify with `npm view @onetimesecret/sdk` and `npm install @onetimesecret/sdk`
 in a scratch directory (both `import` and `require` should work).
 
+Pushing the `v0.1.0` tag also triggers `release.yml`; its `publish` job fails
+until step 3 is done. That is expected: finish step 3, then re-run the failed
+job (or leave it, since the version is already on npm) and the
+`github-release` job creates the release.
+
 ### 3. Trusted publishing
 
 On npmjs.com, open the package → Settings → Trusted Publisher → GitHub Actions:
@@ -60,9 +73,9 @@ On npmjs.com, open the package → Settings → Trusted Publisher → GitHub Act
 | Field | Value |
 |---|---|
 | Organization or user | `onetimesecret` |
-| Repository | `onetime-js` |
+| Repository | `onetimesecret-js` |
 | Workflow filename | `release.yml` |
-| Environment name | `npmjs.com` |
+| Environment name | `npm` |
 
 Then under Publishing access choose **Require two-factor authentication and
 disallow tokens**. Trusted publishing keeps working because it uses OIDC
@@ -75,20 +88,30 @@ automatically because both the repository and the package are public.
 ### 4. GitHub environment
 
 Referencing an environment from a workflow creates it without protection, so
-configure it in GitHub → Settings → Environments → `npmjs.com`:
+configure it in GitHub → Settings → Environments → `npm`:
 
 - **Deployment branches and tags:** restrict to tags matching `v*`.
-- **Required reviewers:** add one when a human release gate is wanted.
+- **Required reviewers:** add one when a human release gate is wanted. The
+  `publish` job then pauses after `build` succeeds, which gives a last look
+  at the packed tarball before anything is uploaded.
 
 The environment name is compared as a plain string against the OIDC token
 claim, so `release.yml`, the npm publisher record and the GitHub environment
-must all say `npmjs.com`.
+must all say `npm`.
 
 ### 5. Repository settings
 
-- Protect `main`: require the CI workflow to pass and require pull requests.
-- Enable Dependabot (`.github/dependabot.yml` is already present).
-- Give the `api-contract` label a colour; the spec-drift workflow applies it.
+- **Settings → Actions → General → Workflow permissions**: *Read repository
+  contents and packages permissions* is sufficient. Each job in
+  `release.yml` requests what it needs (`id-token: write` to publish,
+  `contents: write` to create the release). The spec-drift workflow needs
+  **Allow GitHub Actions to create and approve pull requests** ticked.
+- Protect `main` with a ruleset: require a pull request and the CI checks.
+- Protect the `v*` tag pattern (Settings → Tags, or a ruleset) so only
+  maintainers can push release tags.
+- Enable Dependabot alerts and security updates. `.github/dependabot.yml`
+  already keeps the pinned action SHAs and dev dependencies current.
+- Create the `api-contract` label; the spec-drift workflow applies it.
 
 ## Cutting a release
 
@@ -112,10 +135,17 @@ must all say `npmjs.com`.
    git push origin main v0.2.0
    ```
 
-The tag runs `release.yml`, which checks the tag against `package.json`, runs
-lint/typecheck/tests/build and the package checks, publishes to npm with
-provenance, and creates a GitHub release whose notes are the changelog section
-for that version.
+Watch **Actions → Release**. The run:
+
+- `build`: fails fast if the tag does not equal `package.json`'s version or
+  the three version locations disagree; runs lint, typecheck, tests, build,
+  publint and attw; packs the tarball and extracts the changelog section.
+- `publish`: uploads that exact tarball to npm through trusted publishing,
+  pausing for approval if reviewers are configured. Provenance is attached
+  automatically.
+- `github-release`: creates the GitHub Release `vX.Y.Z` with the changelog
+  section as notes and the tarball attached. Idempotent; re-run it alone if
+  it fails after publishing.
 
 Prerelease tags (`v1.0.0-rc.1`) publish under the `next` dist-tag and are
 marked as prereleases on GitHub, so `npm install @onetimesecret/sdk` keeps
@@ -131,14 +161,29 @@ npm view @onetimesecret/sdk dist-tags
 The npm package page should show the provenance badge linking back to the
 workflow run.
 
-## If a release goes wrong
+## If the run fails
 
-- **Workflow failed before publishing:** fix on `main`, delete the tag locally
-  and remotely (`git push origin :refs/tags/v0.2.0`), re-tag.
-- **Published a broken version:** publish a fix as the next patch. Only use
-  `npm unpublish` within the first 72 hours and only for something harmful
-  (leaked credential, malicious dependency); `npm deprecate` is the right tool
-  for everything else.
+- **Tag/version mismatch or a failing check in `build`:** nothing was
+  uploaded. Delete the tag (`git push --delete origin vX.Y.Z`), fix on
+  `main`, re-tag.
+- **Publish rejected by npm** (`E404`/`EOTP`/"unable to authenticate"): the
+  trusted-publisher record does not match the workflow's claims. Re-check the
+  four fields in step 3, especially the environment name, and that npm on the
+  runner is ≥ 11.5.1. Nothing was uploaded; re-run the job.
+- **Published but `github-release` failed:** npm versions are immutable, so
+  the version is taken. Re-run the `github-release` job on its own; it is
+  idempotent.
+- **Published a broken version:** fix forward with a patch release. Use
+  `npm deprecate` to warn installers; reserve `npm unpublish` (72-hour window)
+  for something harmful such as a leaked credential.
+
+## Adapting this for another SDK
+
+Copy `release.yml` and this document, then change: the version-extraction
+command, the package name and registry URL, and the publish command. Keep the
+three-job split (build → publish → github-release), the tag/version check, the
+environment gate, the changelog-section release notes and the SHA-pinned
+actions.
 
 ## Versioning
 

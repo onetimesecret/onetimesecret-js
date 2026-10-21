@@ -64,7 +64,7 @@ if (!unreleased?.[1] || unreleased[1].trim() === "") {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const repo = "https://github.com/onetimesecret/onetime-js";
+const repo = "https://github.com/onetimesecret/onetimesecret-js";
 
 pkg.version = requested;
 await writeFile(files.pkg, `${JSON.stringify(pkg, null, 2)}\n`);
