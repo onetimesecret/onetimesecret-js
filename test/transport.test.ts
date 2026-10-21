@@ -109,6 +109,80 @@ describe("transport", () => {
     expect(requests).toHaveLength(1);
   });
 
+  it("reports a timeout as TimeoutError when a caller signal is also attached", async () => {
+    // AbortSignal.timeout is not driven by fake timers, so hand the transport a
+    // controllable signal and fire it by hand.
+    vi.useFakeTimers();
+    try {
+      const timeout = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeout.signal);
+      const { fetch, requests } = mockFetch({ delayMs: 60_000, body: { success: true } });
+      const caller = new AbortController();
+      const pending = makeClient(fetch, { maxRetries: 0 }).status({ signal: caller.signal });
+      timeout.abort(new DOMException("The operation timed out.", "TimeoutError"));
+      await expect(pending).rejects.toBeInstanceOf(TimeoutError);
+      expect(caller.signal.aborted).toBe(false);
+      expect(requests).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("prefers the caller's abort when the timeout and the signal fire together", async () => {
+    vi.useFakeTimers();
+    try {
+      const timeout = new AbortController();
+      vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeout.signal);
+      const { fetch, requests } = mockFetch({ delayMs: 60_000, body: { success: true } });
+      const caller = new AbortController();
+      const pending = makeClient(fetch).status({ signal: caller.signal });
+      // The combined signal aborts on the first source (the timeout); the
+      // caller's abort lands before the transport inspects the rejection.
+      timeout.abort(new DOMException("The operation timed out.", "TimeoutError"));
+      caller.abort();
+      await expect(pending).rejects.toBeInstanceOf(AbortError);
+      expect(requests).toHaveLength(1); // a timeout alone would have been retried
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("honours Retry-After given as an HTTP date", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-21T06:00:00Z") });
+    try {
+      const retryAt = new Date(Date.now() + 2_000).toUTCString();
+      const { fetch, requests } = mockFetch(
+        { status: 429, body: { error: "slow" }, headers: { "retry-after": retryAt } },
+        { body: { success: true } },
+      );
+      const pending = makeClient(fetch).status();
+      await vi.advanceTimersByTimeAsync(1_999);
+      expect(requests).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(requests).toHaveLength(2);
+      await expect(pending).resolves.toMatchObject({ success: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("retries at once when the Retry-After date is in the past", async () => {
+    vi.useFakeTimers({ now: new Date("2026-10-21T06:00:00Z") });
+    try {
+      const retryAt = new Date(Date.now() - 60_000).toUTCString();
+      const { fetch, requests } = mockFetch(
+        { status: 503, body: { error: "down" }, headers: { "retry-after": retryAt } },
+        { body: { success: true } },
+      );
+      const pending = makeClient(fetch).status();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(requests).toHaveLength(2);
+      await expect(pending).resolves.toMatchObject({ success: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("rejects immediately when the signal is already aborted", async () => {
     const { fetch, requests } = mockFetch({ body: { success: true } });
     await expect(makeClient(fetch).status({ signal: AbortSignal.abort() })).rejects.toBeInstanceOf(

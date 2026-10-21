@@ -1,9 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readEnv } from "../src/config.ts";
 import { ConfigurationError, OnetimeSecret, REGIONAL_HOSTS } from "../src/index.ts";
 import { BASE_URL, CUSTOMER, mockFetch, TOKEN } from "./helpers.ts";
 
 describe("client configuration", () => {
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
 
   it("requires a baseUrl", () => {
     vi.stubEnv("ONETIME_BASE_URL", "");
@@ -69,6 +73,21 @@ describe("client configuration", () => {
     const client = new OnetimeSecret();
     expect(client.baseUrl).toBe("https://ca.onetimesecret.com/");
     expect(client.authenticated).toBe(true);
+  });
+
+  it("treats the environment as empty on runtimes without process", () => {
+    vi.stubEnv("ONETIME_BASE_URL", "https://ca.onetimesecret.com");
+    vi.stubGlobal("process", undefined);
+    expect(readEnv("ONETIME_BASE_URL")).toBeUndefined();
+    expect(() => new OnetimeSecret({ fetch: mockFetch().fetch })).toThrow(/baseUrl is required/);
+    const client = new OnetimeSecret({ baseUrl: BASE_URL, fetch: mockFetch().fetch });
+    expect(client.authenticated).toBe(false);
+  });
+
+  it("treats a process without env as an empty environment", () => {
+    vi.stubGlobal("process", {});
+    expect(readEnv("ONETIME_BASE_URL")).toBeUndefined();
+    expect(() => new OnetimeSecret({ fetch: mockFetch().fetch })).toThrow(ConfigurationError);
   });
 
   it("prefers explicit options over the environment", () => {
