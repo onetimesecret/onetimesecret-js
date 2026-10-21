@@ -23,7 +23,7 @@ import type { StatusResponse, SupportedLocalesResponse, VersionResponse } from "
  * });
  *
  * const { record } = await client.secrets.conceal({ secret: "hunter2", ttl: 3600 });
- * console.log(record.receipt.share_url);
+ * console.log(client.shareUrl(record.secret.identifier));
  * ```
  *
  * Clients hold only configuration and a stateless transport, so one instance
