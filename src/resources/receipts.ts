@@ -10,7 +10,7 @@ import type {
   ResourceRequestOptions,
   UpdateReceiptParams,
 } from "../types.ts";
-import { compact } from "./util.ts";
+import { compact, pick, prefix } from "./util.ts";
 
 type BurnBody = RequestBodyOf<"v2_receipt_burnSecret">;
 
@@ -83,12 +83,4 @@ export class Receipts {
     });
     return data;
   }
-}
-
-function prefix(guest: boolean | undefined, path: string): string {
-  return guest ? `/api/v2/guest${path}` : `/api/v2${path}`;
-}
-
-function pick(options: RequestOptions): RequestOptions {
-  return { signal: options.signal, timeoutMs: options.timeoutMs, headers: options.headers };
 }

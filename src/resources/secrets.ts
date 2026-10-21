@@ -14,7 +14,7 @@ import type {
   SecretStatusListResponse,
   SecretStatusResponse,
 } from "../types.ts";
-import { compact } from "./util.ts";
+import { compact, pick, prefix } from "./util.ts";
 
 // The published schema marks `share_domain` as required because the web UI
 // always sends it; the server accepts its absence and uses the default domain.
@@ -171,12 +171,4 @@ export class Secrets {
     });
     return data;
   }
-}
-
-function prefix(guest: boolean | undefined, path: string): string {
-  return guest ? `/api/v2/guest${path}` : `/api/v2${path}`;
-}
-
-function pick(options: RequestOptions): RequestOptions {
-  return { signal: options.signal, timeoutMs: options.timeoutMs, headers: options.headers };
 }
