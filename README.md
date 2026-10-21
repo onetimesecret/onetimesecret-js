@@ -53,7 +53,7 @@ client.shareUrl(record.secret.identifier); // "https://eu.onetimesecret.com/secr
 // value only once, on the first read of the receipt, so the SDK claims it for you.
 const generated = await client.secrets.generate({ ttl: 86_400, length: 32 });
 generated.value;       // the generated password
-generated.claimError;  // set, instead of throwing, if the claim request failed
+generated.claimError;  // a ClaimError, instead of a throw, if the claim request failed
 
 // Reveal (consume) a secret — one time only
 const revealed = await client.secrets.reveal(record.secret.identifier, { passphrase: "pw12" });
@@ -158,7 +158,9 @@ value is never in the create response; the server discloses it exactly once,
 on the first read of the receipt and only shortly after creation, so the
 method reads the receipt immediately with the same auth and guest routing. If
 that read fails the secret still exists, so nothing is thrown: `value` is
-`undefined` and the error is in `claimError`. Pass `claimValue: false` to skip
+`undefined` and `claimError` is a `ClaimError` carrying only the status and
+error class/type of the failed read, never a response body (a malformed
+receipt body could contain the value). Pass `claimValue: false` to skip
 the read and claim the value yourself with `receipts.get` (first read only).
 
 ### `client.receipts`
@@ -235,6 +237,8 @@ try {
 | `RateLimitError` | 429 / `LimitExceeded` (see `retryAfter`) |
 | `ServerError` | 5xx |
 | `TransportError`, `TimeoutError`, `AbortError` | network failure, timeout, caller abort |
+| `ResponseParseError` | a JSON content type whose body did not parse; carries the status only, never the body; extends `TransportError` |
+| `ClaimError` | `secrets.generate()` could not claim the value; returned as `claimError`, never thrown |
 | `ConfigurationError` | bad `baseUrl`, malformed `customer`, incomplete credentials (thrown by the constructor) |
 
 `AccountRequiredError` exists because the server reports "this needs an

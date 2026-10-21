@@ -7,6 +7,7 @@ export {
   type APIErrorBody,
   AuthenticationError,
   BadRequestError,
+  ClaimError,
   ConfigurationError,
   ConflictError,
   EntitlementError,

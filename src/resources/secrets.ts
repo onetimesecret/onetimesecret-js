@@ -1,4 +1,4 @@
-import { OnetimeError } from "../errors.ts";
+import { ClaimError } from "../errors.ts";
 import type { HttpTransport } from "../http.ts";
 import { extractIdentifier } from "../identifiers.ts";
 import type {
@@ -84,7 +84,8 @@ export class Secrets {
    * `claimValue: false` is passed, this method reads the receipt straight away
    * (same auth and guest routing as the create call) and returns the value as
    * `value`. A failed claim does not throw, because the secret exists and the
-   * links are valid; the error is returned as `claimError` instead.
+   * links are valid; a sanitized {@link ClaimError} is returned as
+   * `claimError` instead.
    */
   async generate(
     params: GenerateParams = {},
@@ -128,10 +129,9 @@ export class Secrets {
       });
       result.value = receipt.details?.secret_value ?? undefined;
     } catch (cause) {
-      result.claimError =
-        cause instanceof OnetimeError
-          ? cause
-          : new OnetimeError("Could not claim the generated value", { cause });
+      // Never rethrow and never keep the original error: a malformed receipt
+      // body could carry the value, and parser messages quote the body.
+      result.claimError = ClaimError.from(cause);
     }
     return result;
   }

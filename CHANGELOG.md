@@ -13,9 +13,15 @@ include breaking changes; they are called out explicitly.
   discloses it only once, on the first read of the receipt, so the method
   reads the receipt immediately after creation with the same auth and guest
   routing. A failed claim does not throw, because the secret exists and the
-  links are valid: the response comes back with `value` undefined and the
-  error in `claimError`. Pass `claimValue: false` to claim it yourself with
-  `receipts.get`. The return type is `GenerateResult`.
+  links are valid: the response comes back with `value` undefined and a
+  `ClaimError` in `claimError`, which carries only the status and error
+  class/type of the failed read, never a response body. Pass
+  `claimValue: false` to claim it yourself with `receipts.get`. The return
+  type is `GenerateResult`.
+- `ResponseParseError` (extends `TransportError`) replaces the raw
+  `SyntaxError` that escaped when a JSON content type carried an unparseable
+  body. It carries the status only, so parser messages quoting the body no
+  longer reach callers.
 
 ### Fixed
 

@@ -246,3 +246,49 @@ function optionalNumber(value: unknown): number | undefined {
   }
   return undefined;
 }
+
+/**
+ * Why `secrets.generate()` could not claim the generated value. The secret
+ * was created and its links are valid; only the follow-up receipt read failed.
+ *
+ * Deliberately carries nothing from the failed response beyond its status and
+ * error class/type: no body, no message, no `cause`. A malformed receipt body
+ * could contain the value itself.
+ */
+export class ClaimError extends OnetimeError {
+  /** Name of the underlying error class, e.g. `"ServerError"`, `"TimeoutError"`, `"ResponseParseError"`. */
+  readonly errorClass: string;
+  /** HTTP status of the receipt read, when the server answered. */
+  readonly status: number | undefined;
+  /** The server's `error_type`, when the failure was an API error. */
+  readonly errorType: string | undefined;
+  /** Correlation id of the receipt read, when the server answered. */
+  readonly requestId: string | undefined;
+
+  constructor(init: {
+    errorClass: string;
+    status?: number | undefined;
+    errorType?: string | undefined;
+    requestId?: string | undefined;
+  }) {
+    const detail = [init.errorClass, init.status, init.errorType].filter((v) => v !== undefined);
+    super(`Could not claim the generated value: ${detail.join(" ")}`);
+    this.errorClass = init.errorClass;
+    this.status = init.status;
+    this.errorType = init.errorType;
+    this.requestId = init.requestId;
+  }
+
+  /** Reduces whatever the receipt read threw to the sanitized fields above. */
+  static from(cause: unknown): ClaimError {
+    const errorClass = cause instanceof Error ? cause.name : "Error";
+    const status =
+      cause instanceof APIError || cause instanceof ResponseParseError ? cause.status : undefined;
+    return new ClaimError({
+      errorClass,
+      status,
+      errorType: cause instanceof APIError ? cause.errorType : undefined,
+      requestId: cause instanceof APIError ? cause.requestId : undefined,
+    });
+  }
+}

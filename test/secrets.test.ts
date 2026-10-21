@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ServerError } from "../src/index.ts";
+import { ClaimError } from "../src/index.ts";
 import { BASE_URL, expectBasicAuth, makeClient, mockFetch } from "./helpers.ts";
 
 const concealResponse = {
@@ -119,9 +119,43 @@ describe("secrets", () => {
     );
     const res = await makeClient(fetch, { maxRetries: 0 }).secrets.generate();
     expect(res.value).toBeUndefined();
-    expect(res.claimError).toBeInstanceOf(ServerError);
+    expect(res.claimError).toBeInstanceOf(ClaimError);
+    expect(res.claimError).toMatchObject({
+      errorClass: "ServerError",
+      status: 500,
+      errorType: "InternalError",
+    });
+    expect(res.claimError?.message).toBe(
+      "Could not claim the generated value: ServerError 500 InternalError",
+    );
     expect(res.record.secret.identifier).toBe("sec1");
     expect(requests).toHaveLength(2);
+  });
+
+  it("keeps a malformed receipt body out of claimError", async () => {
+    const leaked = "UEy}8cWR]FmJ";
+    const { fetch } = mockFetch(
+      { body: concealResponse },
+      // A 200 whose JSON is truncated: the parser's own message would quote it.
+      { rawBody: `{"record":{"identifier":"rcpt1"},"details":{"secret_value":"${leaked}"` },
+    );
+    const res = await makeClient(fetch).secrets.generate();
+    expect(res.value).toBeUndefined();
+    expect(res.record.secret.identifier).toBe("sec1");
+    const err = res.claimError;
+    expect(err).toBeInstanceOf(ClaimError);
+    expect(err).toMatchObject({ errorClass: "ResponseParseError", status: 200 });
+    expect(err?.cause).toBeUndefined();
+    const forms = [
+      String(err),
+      err?.stack ?? "",
+      JSON.stringify(err),
+      JSON.stringify(err, Object.getOwnPropertyNames(err ?? {})),
+    ];
+    for (const form of forms) {
+      expect(form).not.toContain(leaked);
+      expect(form).not.toContain("secret_value");
+    }
   });
 
   it("leaves value undefined when the server withholds it", async () => {

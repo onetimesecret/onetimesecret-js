@@ -5,7 +5,7 @@
  * published contract; request parameter types are hand-written in camelCase
  * and mapped to the wire format inside each resource.
  */
-import type { OnetimeError } from "./errors.ts";
+import type { ClaimError } from "./errors.ts";
 import type { operations } from "./generated/v2.ts";
 import type { RequestOptions } from "./http.ts";
 
@@ -44,8 +44,11 @@ export type GenerateResponse = ResponseOf<"v2_generateSecret">;
 export type GenerateResult = GenerateResponse & {
   /** The generated value, if the server disclosed it. */
   value?: string | undefined;
-  /** Why the value could not be claimed; the secret itself was created. */
-  claimError?: OnetimeError | undefined;
+  /**
+   * Why the value could not be claimed; the secret itself was created. Carries
+   * only the status and error class/type of the failed receipt read.
+   */
+  claimError?: ClaimError | undefined;
 };
 export type SecretResponse = ResponseOf<"v2_showSecret">;
 export type RevealResponse = ResponseOf<"v2_secret_revealSecret">;
