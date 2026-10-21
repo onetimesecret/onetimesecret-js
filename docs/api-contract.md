@@ -45,7 +45,8 @@ change shows up as a reviewable diff and builds are reproducible offline.
 ## Keeping in sync
 
 - `pnpm sync-spec` fetches the published definition into `spec/openapi.v2.json`.
-  `--check` exits non-zero if it differs; CI's `check` job runs it.
+  `--check` exits non-zero if it differs, for scripts and local use; CI does
+  not run it, so a spec change never breaks an unrelated pull request.
 - `pnpm generate` regenerates `src/generated/v2.ts`. CI fails if the committed
   output is stale.
 - `.github/workflows/spec-drift.yml` runs on weekdays, and opens a pull request
