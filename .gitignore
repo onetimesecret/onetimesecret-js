@@ -8,3 +8,6 @@ coverage/
 .env.*
 !.env.example
 .vitest/
+
+# pnpm hardlink probes left behind when an install is interrupted or sandboxed
+_tmp_*
