@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    # Daily at 06:00 UTC (live API tests only; see the `live` job)
+    - cron: "0 6 * * *"
 
 permissions:
   contents: read
@@ -16,6 +19,7 @@ concurrency:
 jobs:
   check:
     name: Lint, typecheck, package
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -40,6 +44,7 @@ jobs:
 
   test:
     name: Test (Node ${{ matrix.node }})
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -64,6 +69,7 @@ jobs:
 
   runtimes:
     name: Smoke test (${{ matrix.runtime }})
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -96,3 +102,22 @@ jobs:
           JS
           cp /tmp/smoke.mjs ./smoke.mjs
           if [ "${{ matrix.runtime }}" = "bun" ]; then bun ./smoke.mjs; else deno run --allow-env ./smoke.mjs; fi
+
+  live:
+    name: Live API tests
+    runs-on: ubuntu-latest
+    # Only on a schedule or when triggered manually. Never on push/PR: these
+    # tests hit an external production service over the network.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    env:
+      ONETIME_LIVE: "1"
+      ONETIME_BASE_URL: "https://eu.onetimesecret.com"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vitest run test/live.test.ts

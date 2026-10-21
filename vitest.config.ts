@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
+    // Live tests opt in with ONETIME_LIVE=1 (see test/live.test.ts).
     environment: "node",
     coverage: {
       provider: "v8",

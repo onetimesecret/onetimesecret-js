@@ -31,7 +31,9 @@ pnpm sync-spec && pnpm generate   # refresh the API contract and generated types
 - Writes (POST/PATCH) are never retried.
 - Every thrown error extends `OnetimeError`. New server `error_type` values go
   in `ERROR_TYPE_MAP` in `src/errors.ts` with a test.
-- Tests do not touch the network. Use `mockFetch` from `test/helpers.ts`.
+- Tests do not touch the network by default. Use `mockFetch` from
+  `test/helpers.ts`. `ONETIME_LIVE=1 pnpm exec vitest run test/live.test.ts`
+  runs the opt-in live suite against production guest endpoints.
 - Add a `CHANGELOG.md` line under `## [Unreleased]` for user-visible changes.
 - Formatting and linting are Biome (`pnpm lint:fix`). TypeScript is strict
   with `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess` and

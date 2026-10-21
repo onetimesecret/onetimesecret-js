@@ -64,6 +64,8 @@ remove the workaround here.
 | `continue` is a `string` on reveal/burn | Accepts `true` or `"true"` | Sends `"true"` / `"false"` to match the spec | Consider `boolean` (or `z.coerce.boolean()`) in the request schema |
 | Error bodies document `error`, `error_type`, `message`, `field`, `error_id`, `request_id` only | ADR-013 class-specific fields also appear: `code`, `error_key`, `retry_after`, `attempts`, `max_attempts`, `entitlement`, `current_plan`, `upgrade_to` | Exposes them on `APIError` | Describe the ADR-013 body as a shared `components.schemas.Error` with the class-specific fields |
 | Response schemas are inlined per operation (no `components.schemas`) | — | Public types are aliases into `operations[...]` | Register named schemas so consumers get stable, documented type names (`Receipt`, `Secret`) and the generated file shrinks |
+| `GET /api/v2/version` has `security: []` (public) | Production answers **401** to anonymous callers (observed 2026-10-21 on eu) | `client.version()` throws `AuthenticationError` without credentials; the live test accepts either | Either make the route public or mark it `basicAuth` in the spec |
+| Burn responses return the updated receipt | The `record` in the burn response still says `state: "new"` (`details.title` is "Secret burned"); a follow-up `GET /receipt/{id}` shows `burned` | Nothing; callers should re-fetch the receipt if they need the post-burn state. The live test does | Serialize the record after the state change |
 
 ## What would make the coordination better
 

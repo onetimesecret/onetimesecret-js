@@ -53,7 +53,10 @@
         "useImportType": "error",
         "useExportType": "error"
       },
-      "nursery": {}
+      "nursery": {},
+      "complexity": {
+        "useLiteralKeys": "off"
+      }
     }
   },
   "assist": {

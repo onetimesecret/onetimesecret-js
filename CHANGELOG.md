@@ -21,6 +21,7 @@ include breaking changes; they are called out explicitly.
 - Retries with backoff for idempotent requests, per-request timeouts and
   `AbortSignal` support.
 - Response types generated from the published OpenAPI definition.
+- Opt-in live test suite (`ONETIME_LIVE=1`) against the guest endpoints.
 
 [Unreleased]: https://github.com/onetimesecret/onetimesecret-js/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/onetimesecret/onetimesecret-js/releases/tag/v0.1.0

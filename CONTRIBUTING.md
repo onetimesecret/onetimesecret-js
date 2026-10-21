@@ -48,8 +48,10 @@ docs/                  releasing.md, api-contract.md
 ## Making a change
 
 1. Branch from `main`.
-2. Add or update tests. The suite doesn't hit the network; use `mockFetch`
-   from `test/helpers.ts`.
+2. Add or update tests. The default suite doesn't hit the network; use
+   `mockFetch` from `test/helpers.ts`. `test/live.test.ts` runs against a
+   real server with `ONETIME_LIVE=1` (guest endpoints only, EU by default;
+   `ONETIME_BASE_URL` overrides) and runs daily in CI.
 3. Add a line under `## [Unreleased]` in `CHANGELOG.md` describing the change
    from the user's point of view.
 4. `pnpm check` must pass. Biome formats on `pnpm lint:fix`.
