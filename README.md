@@ -231,6 +231,20 @@ pnpm generate       # regenerate src/generated/v2.ts from the spec
 See [CONTRIBUTING.md](CONTRIBUTING.md), [docs/releasing.md](docs/releasing.md)
 and [docs/api-contract.md](docs/api-contract.md) for how the SDK tracks the API.
 
+### Example
+
+[`examples/basic.ts`](examples/basic.ts) runs the whole flow against a real
+server: conceal a secret, read its receipt, reveal it, and confirm the receipt
+state changed. It reads the same environment variables as the client.
+
+```sh
+ONETIME_BASE_URL=https://eu.onetimesecret.com node examples/basic.ts
+```
+
+Add `ONETIME_CUSTOMER_EXTID` and `ONETIME_API_TOKEN` to run as your account;
+without them the script is anonymous and uses the guest endpoints. Node 22.18+
+runs the TypeScript directly (earlier 22.x: `node --experimental-strip-types`).
+
 ## License
 
 [MIT](LICENSE).

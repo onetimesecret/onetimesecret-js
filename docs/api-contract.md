@@ -85,7 +85,7 @@ Suggestions for the main repo, in rough order of value to SDK authors:
    runs its request shapes against a dev server. This catches regressions on
    the producing side before they reach a spec release. The SDK's `test/`
    suite uses an injected `fetch` and recorded responses, so it can run
-   anywhere; a small `examples/` script against `localhost:3000` would be the
-   natural seed.
+   anywhere; `examples/basic.ts` with `ONETIME_BASE_URL` pointed at a dev
+   server is the natural seed.
 5. **Publish the spec with a stable permalink per version**, so a given SDK
    release can cite exactly which contract it was generated from.
