@@ -2,7 +2,8 @@
 
 Thanks for helping with the Onetime Secret JavaScript SDK. This is a small
 library with a deliberately narrow job: a correct, well-typed, dependency-free
-client for the public API.
+client for the public API. Participation is covered by the
+[code of conduct](CODE_OF_CONDUCT.md).
 
 ## Setup
 
