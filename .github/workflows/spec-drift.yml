@@ -50,7 +50,7 @@ jobs:
         if: steps.sync.outputs.changed == 'true'
         with:
           branch: chore/sync-openapi-spec
-          commit-message: "chore: sync OpenAPI v2 spec (${{ steps.sync.outputs.version }})"
+          commit-message: "Sync OpenAPI v2 spec (${{ steps.sync.outputs.version }})"
           title: "Sync OpenAPI v2 spec (${{ steps.sync.outputs.version }})"
           body: |
             The published API v2 definition changed. This PR vendors the new spec and
