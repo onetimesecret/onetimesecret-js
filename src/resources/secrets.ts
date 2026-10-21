@@ -1,3 +1,4 @@
+import { OnetimeError } from "../errors.ts";
 import type { HttpTransport } from "../http.ts";
 import { extractIdentifier } from "../identifiers.ts";
 import type {
@@ -5,6 +6,8 @@ import type {
   ConcealResponse,
   GenerateParams,
   GenerateResponse,
+  GenerateResult,
+  ReceiptResponse,
   RequestBodyOf,
   RequestOptions,
   ResourceRequestOptions,
@@ -72,11 +75,21 @@ export class Secrets {
     return data;
   }
 
-  /** Has the server generate a random value (a password, say) and returns the links. */
+  /**
+   * Has the server generate a random value (a password, say) and returns the
+   * links together with the value.
+   *
+   * The create response never carries the value: the server discloses it once,
+   * on the first read of the receipt, and only shortly after creation. Unless
+   * `claimValue: false` is passed, this method reads the receipt straight away
+   * (same auth and guest routing as the create call) and returns the value as
+   * `value`. A failed claim does not throw, because the secret exists and the
+   * links are valid; the error is returned as `claimError` instead.
+   */
   async generate(
     params: GenerateParams = {},
     options: ResourceRequestOptions = {},
-  ): Promise<GenerateResponse> {
+  ): Promise<GenerateResult> {
     const sets = params.characterSets;
     const body: GenerateBody = {
       secret: compact({
@@ -104,7 +117,23 @@ export class Secrets {
       body,
       ...pick(options),
     });
-    return data;
+    const result: GenerateResult = { ...data };
+    if (params.claimValue === false) return result;
+
+    try {
+      const { data: receipt } = await this.#http.request<ReceiptResponse>({
+        method: "GET",
+        path: prefix(options.guest, `/receipt/${data.record.receipt.identifier}`),
+        ...pick(options),
+      });
+      result.value = receipt.details?.secret_value ?? undefined;
+    } catch (cause) {
+      result.claimError =
+        cause instanceof OnetimeError
+          ? cause
+          : new OnetimeError("Could not claim the generated value", { cause });
+    }
+    return result;
   }
 
   /**

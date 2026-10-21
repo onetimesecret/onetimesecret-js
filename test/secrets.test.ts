@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ServerError } from "../src/index.ts";
 import { BASE_URL, expectBasicAuth, makeClient, mockFetch } from "./helpers.ts";
 
 const concealResponse = {
@@ -9,6 +10,13 @@ const concealResponse = {
     share_domain: null,
   },
   details: {},
+};
+
+// The first read of a generate receipt carries the value in `details`.
+const claimedReceipt = {
+  shrimp: "",
+  record: { identifier: "rcpt1", state: "new" },
+  details: { secret_value: "UEy}8cWR]FmJ", show_secret: true, can_decrypt: true },
 };
 
 describe("secrets", () => {
@@ -59,7 +67,7 @@ describe("secrets", () => {
   });
 
   it("generates a secret with character set options", async () => {
-    const { fetch, requests } = mockFetch({ body: concealResponse });
+    const { fetch, requests } = mockFetch({ body: concealResponse }, { body: claimedReceipt });
     await makeClient(fetch).secrets.generate({
       length: 24,
       characterSets: { symbols: false, excludeAmbiguous: true },
@@ -74,6 +82,65 @@ describe("secrets", () => {
         character_sets: { symbols: false, exclude_ambiguous: true },
       },
     });
+    expect(requests[0]?.body).not.toHaveProperty("secret.claim_value");
+  });
+
+  it("claims the generated value from the receipt right after creation", async () => {
+    const { fetch, requests } = mockFetch({ body: concealResponse }, { body: claimedReceipt });
+    const res = await makeClient(fetch).secrets.generate(
+      { length: 12 },
+      { headers: { "x-trace": "t1" } },
+    );
+    expect(res.value).toBe("UEy}8cWR]FmJ");
+    expect(res.claimError).toBeUndefined();
+    expect(res.record.receipt.identifier).toBe("rcpt1");
+    expect(requests.map((r) => `${r.method} ${r.url}`)).toEqual([
+      `POST ${BASE_URL}/api/v2/secret/generate`,
+      `GET ${BASE_URL}/api/v2/receipt/rcpt1`,
+    ]);
+    // The claim reuses the create call's options.
+    expect(requests[1]?.headers.get("x-trace")).toBe("t1");
+    expectBasicAuth(requests[1]?.headers ?? new Headers());
+  });
+
+  it("claims through the guest receipt route when the create call was guest", async () => {
+    const { fetch, requests } = mockFetch({ body: concealResponse }, { body: claimedReceipt });
+    const anon = makeClient(fetch, { customer: undefined, apiToken: undefined });
+    const res = await anon.secrets.generate({}, { guest: true });
+    expect(res.value).toBe("UEy}8cWR]FmJ");
+    expect(requests[1]?.url).toBe(`${BASE_URL}/api/v2/guest/receipt/rcpt1`);
+    expect(requests[1]?.headers.has("authorization")).toBe(false);
+  });
+
+  it("returns the create response with claimError when the receipt read fails", async () => {
+    const { fetch, requests } = mockFetch(
+      { body: concealResponse },
+      { status: 500, body: { error: "boom", error_type: "InternalError" } },
+    );
+    const res = await makeClient(fetch, { maxRetries: 0 }).secrets.generate();
+    expect(res.value).toBeUndefined();
+    expect(res.claimError).toBeInstanceOf(ServerError);
+    expect(res.record.secret.identifier).toBe("sec1");
+    expect(requests).toHaveLength(2);
+  });
+
+  it("leaves value undefined when the server withholds it", async () => {
+    const withheld = {
+      ...claimedReceipt,
+      details: { ...claimedReceipt.details, secret_value: null },
+    };
+    const { fetch } = mockFetch({ body: concealResponse }, { body: withheld });
+    const res = await makeClient(fetch).secrets.generate();
+    expect(res.value).toBeUndefined();
+    expect(res.claimError).toBeUndefined();
+  });
+
+  it("skips the claim when claimValue is false", async () => {
+    const { fetch, requests } = mockFetch({ body: concealResponse });
+    const res = await makeClient(fetch).secrets.generate({ claimValue: false });
+    expect(requests).toHaveLength(1);
+    expect(res.value).toBeUndefined();
+    expect(res.claimError).toBeUndefined();
   });
 
   it("reveals by identifier or by link, confirming by default", async () => {

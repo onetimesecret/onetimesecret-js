@@ -5,6 +5,7 @@
  * published contract; request parameter types are hand-written in camelCase
  * and mapped to the wire format inside each resource.
  */
+import type { OnetimeError } from "./errors.ts";
 import type { operations } from "./generated/v2.ts";
 import type { RequestOptions } from "./http.ts";
 
@@ -28,6 +29,24 @@ export type RequestBodyOf<Op extends OperationId> = operations[Op] extends {
 
 export type ConcealResponse = ResponseOf<"v2_concealSecret">;
 export type GenerateResponse = ResponseOf<"v2_generateSecret">;
+
+/**
+ * What {@link Secrets.generate} returns: the create response plus the
+ * generated value, claimed from the receipt right after creation.
+ *
+ * The server discloses a generated value exactly once, on the first read of
+ * its receipt, so the SDK performs that read for you. `value` is `undefined`
+ * when `claimValue: false` was passed, when the claim request failed (see
+ * `claimError`; the secret still exists and the links are valid), or when the
+ * server withheld it (the receipt had already been read, or the display
+ * window had passed).
+ */
+export type GenerateResult = GenerateResponse & {
+  /** The generated value, if the server disclosed it. */
+  value?: string | undefined;
+  /** Why the value could not be claimed; the secret itself was created. */
+  claimError?: OnetimeError | undefined;
+};
 export type SecretResponse = ResponseOf<"v2_showSecret">;
 export type RevealResponse = ResponseOf<"v2_secret_revealSecret">;
 export type SecretStatusResponse = ResponseOf<"v2_secret_showSecretStatus">;
@@ -72,6 +91,12 @@ export interface GenerateParams {
   /** Length of the generated value, 4–128. */
   length?: number | undefined;
   characterSets?: CharacterSets | undefined;
+  /**
+   * Read the receipt immediately after creation to claim the generated value
+   * (see {@link GenerateResult}). Default `true`. Pass `false` to claim it
+   * yourself with `receipts.get`; remember that only the first read gets it.
+   */
+  claimValue?: boolean | undefined;
 }
 
 export interface RevealParams {
