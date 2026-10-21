@@ -1,7 +1,7 @@
 name: Release
 
 # Tag-driven release, following the pattern used across the Onetime Secret
-# SDKs (onetimesecret-py, onetimesecret-rust, onetime-ruby):
+# SDKs (onetimesecret-py, onetimesecret-rust, onetimesecret-ruby):
 #
 #   pnpm bump X.Y.Z && git commit -am "Release X.Y.Z"
 #   git tag -a vX.Y.Z -m vX.Y.Z && git push origin main vX.Y.Z

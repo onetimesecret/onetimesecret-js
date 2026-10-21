@@ -2,7 +2,7 @@
 
 How this SDK is set up for publishing and how a release is cut. The workflow
 is the same shape across the Onetime Secret SDKs (`onetimesecret-py`,
-`onetimesecret-rust`, `onetime-ruby`): push a `vX.Y.Z` tag, CI verifies the
+`onetimesecret-rust`, `onetimesecret-ruby`): push a `vX.Y.Z` tag, CI verifies the
 tag matches the package version, builds, publishes through the registry's
 trusted-publishing (OIDC) flow, and creates the GitHub Release. No registry
 token is stored anywhere.
