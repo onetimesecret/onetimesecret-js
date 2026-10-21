@@ -112,7 +112,7 @@ describe("transport", () => {
   it("rejects immediately when the signal is already aborted", async () => {
     const { fetch, requests } = mockFetch({ body: { success: true } });
     await expect(makeClient(fetch).status({ signal: AbortSignal.abort() })).rejects.toBeInstanceOf(
-      Error,
+      AbortError,
     );
     expect(requests).toHaveLength(0);
   });

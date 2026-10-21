@@ -65,7 +65,9 @@ export class HttpTransport {
     const retriesAllowed = IDEMPOTENT_METHODS.has(params.method) ? this.#config.maxRetries : 0;
 
     for (let attempt = 0; ; attempt++) {
-      params.signal?.throwIfAborted();
+      if (params.signal?.aborted) {
+        throw new AbortError("Request aborted", { cause: params.signal.reason });
+      }
       const timeout = AbortSignal.timeout(timeoutMs);
       const signal = params.signal ? AbortSignal.any([params.signal, timeout]) : timeout;
 

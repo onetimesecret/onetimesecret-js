@@ -7,6 +7,12 @@ include breaking changes; they are called out explicitly.
 
 ## [Unreleased]
 
+### Fixed
+
+- A request made with an already-aborted `AbortSignal` now rejects with the
+  SDK's `AbortError` instead of a bare `DOMException`, so every error the
+  client throws extends `OnetimeError` as documented.
+
 ## [0.1.0] - 2026-10-20
 
 ### Added
