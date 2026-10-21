@@ -49,8 +49,11 @@ record.secret.identifier;   // the secret key — goes in the link for the recip
 record.receipt.identifier;  // the receipt key — keep this one
 client.shareUrl(record.secret.identifier); // "https://eu.onetimesecret.com/secret/..."
 
-// Have the server generate a random value instead
-await client.secrets.generate({ ttl: 86_400, length: 32 });
+// Have the server generate a random value instead. The server discloses the
+// value only once, on the first read of the receipt, so the SDK claims it for you.
+const generated = await client.secrets.generate({ ttl: 86_400, length: 32 });
+generated.value;       // the generated password
+generated.claimError;  // set, instead of throwing, if the claim request failed
 
 // Reveal (consume) a secret — one time only
 const revealed = await client.secrets.reveal(record.secret.identifier, { passphrase: "pw12" });
@@ -144,11 +147,19 @@ variables, so it needs the permission too.
 | Method | Endpoint |
 |---|---|
 | `conceal(params, options?)` | `POST /secret/conceal` |
-| `generate(params?, options?)` | `POST /secret/generate` |
+| `generate(params?, options?)` | `POST /secret/generate`, then `GET /receipt/{id}` to claim the value |
 | `get(identifier, options?)` | `GET /secret/{id}` |
 | `reveal(identifier, params?, options?)` | `POST /secret/{id}/reveal` |
 | `status(identifier, options?)` | `GET /secret/{id}/status` |
 | `statuses(identifiers, options?)` | `POST /secret/status` |
+
+`generate` returns a `GenerateResult`: the create response plus `value`. The
+value is never in the create response; the server discloses it exactly once,
+on the first read of the receipt and only shortly after creation, so the
+method reads the receipt immediately with the same auth and guest routing. If
+that read fails the secret still exists, so nothing is thrown: `value` is
+`undefined` and the error is in `claimError`. Pass `claimValue: false` to skip
+the read and claim the value yourself with `receipts.get` (first read only).
 
 ### `client.receipts`
 

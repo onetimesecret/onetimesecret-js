@@ -7,6 +7,16 @@ include breaking changes; they are called out explicitly.
 
 ## [Unreleased]
 
+### Added
+
+- `secrets.generate()` returns the generated value as `value`. The server
+  discloses it only once, on the first read of the receipt, so the method
+  reads the receipt immediately after creation with the same auth and guest
+  routing. A failed claim does not throw, because the secret exists and the
+  links are valid: the response comes back with `value` undefined and the
+  error in `claimError`. Pass `claimValue: false` to claim it yourself with
+  `receipts.get`. The return type is `GenerateResult`.
+
 ### Fixed
 
 - A request made with an already-aborted `AbortSignal` now rejects with the
