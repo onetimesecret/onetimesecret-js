@@ -11,6 +11,8 @@ export interface RecordedRequest {
 export interface MockResponse {
   status?: number;
   body?: unknown;
+  /** Send this text verbatim instead of `JSON.stringify(body)` (simulates a malformed body). */
+  rawBody?: string;
   headers?: Record<string, string>;
   /** Throw this instead of responding (simulates a transport failure). */
   error?: Error;
@@ -47,7 +49,7 @@ export function mockFetch(...responses: MockResponse[]) {
     }
     if (script.error) throw script.error;
     const status = script.status ?? 200;
-    const body = script.body === undefined ? "" : JSON.stringify(script.body);
+    const body = script.rawBody ?? (script.body === undefined ? "" : JSON.stringify(script.body));
     return new Response(status === 204 ? null : body, {
       status,
       headers: { "content-type": "application/json", ...(script.headers ?? {}) },

@@ -14,6 +14,7 @@ export {
   NotFoundError,
   OnetimeError,
   RateLimitError,
+  ResponseParseError,
   ServerError,
   TimeoutError,
   TransportError,

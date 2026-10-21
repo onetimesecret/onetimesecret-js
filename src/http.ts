@@ -1,5 +1,11 @@
 import type { ResolvedConfig } from "./config.ts";
-import { AbortError, APIError, TimeoutError, TransportError } from "./errors.ts";
+import {
+  AbortError,
+  APIError,
+  ResponseParseError,
+  TimeoutError,
+  TransportError,
+} from "./errors.ts";
 import { VERSION } from "./version.ts";
 
 export type HttpMethod = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -140,13 +146,22 @@ export class HttpTransport {
   }
 }
 
-/** Parses a JSON body; returns the raw text for non-JSON bodies and `undefined` for empty ones. */
+/**
+ * Parses a JSON body; returns the raw text for non-JSON bodies and `undefined`
+ * for empty ones. A JSON content type with an unparseable body throws
+ * {@link ResponseParseError} rather than the parser's own error, whose message
+ * quotes the body.
+ */
 async function parseBody(response: Response): Promise<unknown> {
   const text = await response.text();
   if (text === "") return undefined;
   const contentType = response.headers.get("content-type") ?? "";
   if (/\bjson\b/i.test(contentType)) {
-    return JSON.parse(text);
+    try {
+      return JSON.parse(text);
+    } catch {
+      throw new ResponseParseError(response.status);
+    }
   }
   // Some proxies answer with HTML; keep the text so error messages aren't lost.
   try {

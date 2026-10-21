@@ -3,6 +3,7 @@ import {
   AbortError,
   NotFoundError,
   RateLimitError,
+  ResponseParseError,
   ServerError,
   TimeoutError,
   TransportError,
@@ -40,6 +41,17 @@ describe("transport", () => {
       .catch((e: unknown) => e)) as ServerError;
     expect(err).toBeInstanceOf(ServerError);
     expect(err.message).toBe("Server error (502)");
+  });
+
+  it("rejects a malformed JSON body with ResponseParseError and no body excerpt", async () => {
+    const { fetch } = mockFetch({ rawBody: '{"success": tru' });
+    const err = (await makeClient(fetch)
+      .status()
+      .catch((e: unknown) => e)) as ResponseParseError;
+    expect(err).toBeInstanceOf(ResponseParseError);
+    expect(err.status).toBe(200);
+    expect(err.cause).toBeUndefined();
+    expect(err.message).toBe("Response body is not valid JSON (status 200)");
   });
 
   it("retries GET requests on 429 and 5xx, honouring Retry-After", async () => {

@@ -39,6 +39,20 @@ export class TimeoutError extends TransportError {}
 /** The request was aborted through the caller's `AbortSignal`. */
 export class AbortError extends TransportError {}
 
+/**
+ * The server answered with a JSON content type but the body did not parse.
+ * Carries the status only: no body, no parser message, no `cause`, since a
+ * malformed body can still contain sensitive values.
+ */
+export class ResponseParseError extends TransportError {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`Response body is not valid JSON (status ${status})`);
+    this.status = status;
+  }
+}
+
 /** Structured fields the server may include in an error body (ADR-013). */
 export interface APIErrorBody {
   /** User-facing message. */
