@@ -5,7 +5,8 @@
     "declaration": false,
     "emitDeclarationOnly": false,
     "allowJs": true,
-    "checkJs": true
+    "checkJs": true,
+    "types": ["node"]
   },
   "include": ["test", "scripts", "examples", "*.config.ts"],
   "exclude": ["test/package.test.ts"]
