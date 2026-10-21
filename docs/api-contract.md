@@ -68,6 +68,17 @@ remove the workaround here.
 | `GET /api/v2/version` has `security: []` (public) | Production answers **401** to anonymous callers (observed 2026-10-21 on eu) | `client.version()` throws `AuthenticationError` without credentials; the live test accepts either | Either make the route public or mark it `basicAuth` in the spec |
 | Burn responses return the updated receipt | The `record` in the burn response still says `state: "new"` (`details.title` is "Secret burned"); a follow-up `GET /receipt/{id}` shows `burned` | Nothing; callers should re-fetch the receipt if they need the post-burn state. The live test does | Serialize the record after the state change |
 
+## Receipt links that say `private`
+
+`private` is the historical name for a receipt and still appears in links,
+both on the web (`/private/{id}`) and under the API prefix
+(`/api/v2/private/{id}`). The receipt methods accept those links as input, the
+same way they accept `/receipt/{id}` links and bare identifiers, but the SDK
+never requests a `/private/*` route: every receipt call goes to
+`/api/v2/receipt/*` (or `/api/v2/guest/receipt/*`), which is what the spec
+documents. This is deliberate and is not a gap in the table above; it is an
+input convenience, not a route.
+
 ## What would make the coordination better
 
 Suggestions for the main repo, in rough order of value to SDK authors:

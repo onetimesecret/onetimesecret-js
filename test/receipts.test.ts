@@ -10,9 +10,11 @@ describe("receipts", () => {
     await client.receipts.get("rcpt1");
     await client.receipts.get(`${BASE_URL}/receipt/rcpt1`, { guest: true });
     await client.receipts.get(`${BASE_URL}/private/rcpt1`);
+    await client.receipts.get(`${BASE_URL}/api/v2/private/rcpt1`);
     expect(requests.map((r) => r.url)).toEqual([
       `${BASE_URL}/api/v2/receipt/rcpt1`,
       `${BASE_URL}/api/v2/guest/receipt/rcpt1`,
+      `${BASE_URL}/api/v2/receipt/rcpt1`,
       `${BASE_URL}/api/v2/receipt/rcpt1`,
     ]);
   });
