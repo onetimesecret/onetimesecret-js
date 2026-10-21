@@ -15,3 +15,13 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # openapi-typescript drives the TypeScript compiler API, which TypeScript 7
+      # (the Go port) no longer exposes; `pnpm generate` fails on it. Bump the
+      # major by hand once openapi-typescript supports it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # @types/node tracks the minimum supported runtime (engines.node), not
+      # the newest Node release.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
