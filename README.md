@@ -126,6 +126,17 @@ endpoints, which never require an account.
 Clients hold only configuration and a stateless transport; one instance can be
 shared across an application.
 
+### Runtimes
+
+The SDK runs wherever `fetch` is available. On Deno, the environment-variable
+fallbacks need env access: the constructor reads `ONETIME_BASE_URL`,
+`ONETIME_CUSTOMER_EXTID` and `ONETIME_API_TOKEN` for every option you do not
+pass explicitly, and Deno throws `NotCapable` on a denied read instead of
+treating the variable as unset. Run with
+`--allow-env=ONETIME_BASE_URL,ONETIME_CUSTOMER_EXTID,ONETIME_API_TOKEN` (or a
+blanket `--allow-env`). An anonymous client still reads the two credential
+variables, so it needs the permission too.
+
 ## Resources
 
 ### `client.secrets`
