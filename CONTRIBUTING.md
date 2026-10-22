@@ -52,7 +52,10 @@ docs/                  releasing.md, api-contract.md
 2. Add or update tests. The default suite doesn't hit the network; use
    `mockFetch` from `test/helpers.ts`. `test/live.test.ts` runs against a
    real server with `ONETIME_LIVE=1` (guest endpoints only, EU by default;
-   `ONETIME_BASE_URL` overrides) and runs daily in CI.
+   `ONETIME_BASE_URL` overrides) and runs daily in CI. Against a local
+   server, start it with `HOST` set to the host and port in
+   `ONETIME_BASE_URL` (for example `HOST=127.0.0.1:7143`): the server builds
+   the links in receipts from `HOST`, which defaults to `localhost:3000`.
 3. Add a line under `## [Unreleased]` in `CHANGELOG.md` describing the change
    from the user's point of view.
 4. `pnpm check` must pass. Biome formats on `pnpm lint:fix`.
