@@ -61,10 +61,14 @@ describe.skipIf(!live)("live API (guest endpoints)", () => {
     expect(revealed.record.secret_value).toBe(value);
   });
 
-  it("generates a secret with a receipt", async () => {
-    const res = await client.secrets.generate({ ttl: TTL }, { guest: true });
-    expect(res.record.receipt).toBeDefined();
-    expect(res.record.secret).toBeDefined();
+  it("generates a secret and claims its value once", async () => {
+    const res = await client.secrets.generate({ ttl: TTL, length: 20 }, { guest: true });
+    expect(res.claimError).toBeUndefined();
+    expect(res.value).toHaveLength(20);
+
+    // The disclosure is single-use.
+    const again = await client.receipts.get(res.record.receipt.identifier, { guest: true });
+    expect(again.details?.secret_value ?? null).toBeNull();
   });
 
   it("shows and burns a receipt", async () => {
@@ -76,6 +80,9 @@ describe.skipIf(!live)("live API (guest endpoints)", () => {
 
     const shown = await client.receipts.get(receiptKey, { guest: true });
     expect(shown.record.identifier).toBe(receiptKey);
+    // The server builds receipt links from its HOST setting; a local server
+    // whose HOST differs from ONETIME_BASE_URL fails here.
+    expect(shown.record.share_url).toBe(client.shareUrl(concealed.record.secret.identifier));
 
     const burned = await client.receipts.burn(receiptKey, {}, { guest: true });
     expect((burned.details as { title?: string } | undefined)?.title).toBe("Secret burned");
