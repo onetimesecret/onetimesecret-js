@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "API v2",
-    "version": "2026-10-15",
+    "version": "2026-10-24",
     "description": "Our current stable API. JSON-based, with improved consistency and new endpoints compared to v1. Actively maintained and recommended for production use. Receives new features and updates, but breaking changes are avoided or properly deprecated."
   },
   "servers": [
